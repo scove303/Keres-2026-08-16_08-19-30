@@ -1,0 +1,1 @@
+// Bản snapshot tổng - mọi state tập trung

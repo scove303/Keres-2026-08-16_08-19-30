@@ -1,0 +1,1 @@
+// generic interface: T Create()

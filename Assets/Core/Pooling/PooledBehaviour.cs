@@ -1,0 +1,1 @@
+// base MonoBehaviour cho vật pooled
