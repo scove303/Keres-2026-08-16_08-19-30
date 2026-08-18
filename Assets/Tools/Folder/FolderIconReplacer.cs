@@ -1,42 +1,58 @@
-using System;
-using UnityEditor; // UnityEditor is for editing tools and scripts in the Unity Editor
-using UnityEngine; // UnityEngine is the core namespace for Unity
+using UnityEditor;
+using UnityEngine;
 
 namespace Assets.Tools.Folder
 {
-    [InitializeOnLoad] // This attribute ensures that the static constructor is called when the Unity Editor loads
-    static class FolderIconReplacer
+    [InitializeOnLoad]
+    public static class FolderIconReplacer
     {
-        private static UnityEngine.Object[] allFolderIcons;
-        private static FolderIconSettings settings;
-        public static bool showFolder;
-        public static bool showOverlay;
-
-        static void FolderIcon()
+        static FolderIconReplacer()
         {
-            CheckPreferences();
+            // Nạp dữ liệu Cache ban đầu vào Dictionary O(1)
+            FolderIconRegistry.RefreshCache();
 
-            // EditorApplication.projectWindowItemOnGUI -= ReplaceFolders;
-            // EditorApplication.projectWindowItemOnGUI += ReplaceFolders;
+            // Đăng ký callback vẽ giao diện Project Window
+            EditorApplication.projectWindowItemOnGUI -= OnProjectWindowItemGUI;
+            EditorApplication.projectWindowItemOnGUI += OnProjectWindowItemGUI;
+
+            // Xếp lại thứ tự vẽ: callback của ta phải chạy ĐẦU TIÊN (vẽ ở lớp dưới cùng),
+            // để các plugin khác (vFolders) vẽ ĐÈ LÊN trên icon của mình.
+            // Phải đợi delayCall vì lúc này các plugin khác chưa chắc đã đăng ký xong.
+            EditorApplication.delayCall += MoveCallbackToDrawFirst;
         }
 
-        private static void CheckPreferences()
+        /// <summary>
+        /// Đẩy callback của FolderIcon lên vị trí ĐẦU danh sách gọi.
+        /// Quy tắc: ai vẽ trước thì nằm DƯỚI, ai vẽ sau thì nằm TRÊN.
+        /// vFolders cố tình chèn callback của nó vào đầu danh sách để vẽ đè,
+        /// nên ta cũng phải chen vào đầu thì nó mới vẽ đè lên được icon của ta.
+        /// </summary>
+        private static void MoveCallbackToDrawFirst()
         {
-            showFolder = EditorPrefs.GetBool("FolderIcon.showFolder", true);
-            showOverlay = EditorPrefs.GetBool("FolderIcon.showOverlay", true);
+            EditorApplication.projectWindowItemOnGUI -= OnProjectWindowItemGUI;
+            EditorApplication.projectWindowItemOnGUI = OnProjectWindowItemGUI + EditorApplication.projectWindowItemOnGUI;
         }
 
-        private static T[] GetAllInstances<T>()
-            where T : UnityEngine.Object
+        private static void OnProjectWindowItemGUI(string guid, Rect selectionRect)
         {
-            string[] guids = AssetDatabase.FindAssets("t:" + typeof(T).Name);
-            T[] instances = new T[guids.Length];
-            for (int i = 0; i < guids.Length; i++)
+            if (string.IsNullOrEmpty(guid))
+                return;
+
+            // 1. Kiểm tra cờ bật/tắt Global từ ActiveSettings
+            var settings = FolderIconRegistry.ActiveSettings;
+            if (settings == null)
+                return;
+
+            // Nếu cả 2 tùy chọn hiển thị đều tắt thì ngưng vẽ
+            if (!settings.showCustomFolders && !settings.showOverlay)
+                return;
+
+            // 2. Tra cứu O(1) từ Dictionary theo GUID
+            if (FolderIconRegistry.TryGetIcon(guid, out var iconData))
             {
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                instances[i] = AssetDatabase.LoadAssetAtPath<T>(path);
+                // 3. Chuyển sang Renderer để tính Rect, xóa nền và vẽ Icon
+                FolderIconRenderer.DrawFolderIcon(selectionRect, iconData, settings);
             }
-            return instances;
         }
     }
 }
