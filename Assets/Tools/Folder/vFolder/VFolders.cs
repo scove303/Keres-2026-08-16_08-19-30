@@ -1973,6 +1973,10 @@ namespace VFolders
                 EditorApplication.update -= Update;
                 EditorApplication.update += Update;
 
+                // Luôn vẽ icon của vFolders ở lớp TRÊN CÙNG (xem EnforceDrawOrder bên dưới)
+                EditorApplication.update -= EnforceDrawOrder;
+                EditorApplication.update += EnforceDrawOrder;
+
                 var globalEventHandler = typeof(EditorApplication).GetFieldValue<EditorApplication.CallbackFunction>("globalEventHandler");
                 typeof(EditorApplication).SetFieldValue("globalEventHandler", CheckShortcuts + (globalEventHandler - CheckShortcuts));
 
@@ -2118,6 +2122,20 @@ namespace VFolders
             loadDataAndPaletteDelayed();
             migrateDataFromV1();
 
+        }
+
+        /// <summary>
+        /// Đảm bảo icon của vFolders LUÔN nằm TRÊN CÙNG, không chỉ sau khi compile.
+        ///
+        /// Quy tắc vẽ của Unity: callback đăng ký càng SAU thì vẽ càng TRÊN.
+        /// Mỗi frame, callback ProjectBrowserItemGUI của vFolders được dời xuống
+        /// CUỐI danh sách gọi, nên không plugin nào vẽ đè lên icon được nữa
+        /// (kể cả sau recompile, đổi play mode, hoặc plugin khác đăng ký lại).
+        /// </summary>
+        static void EnforceDrawOrder()
+        {
+            EditorApplication.projectWindowItemOnGUI -= ProjectBrowserItemGUI;
+            EditorApplication.projectWindowItemOnGUI = ProjectBrowserItemGUI + EditorApplication.projectWindowItemOnGUI;
         }
 
         public static VFoldersData data;

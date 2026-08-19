@@ -32,6 +32,7 @@
   <Project Path="Unity.VisualScripting.Flow.csproj" />
   <Project Path="Unity.PerformanceTesting.csproj" />
   <Project Path="Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.TextMeshPro.csproj" />
   <Project Path="Unity.TextMeshPro.Editor.csproj" />
   <Project Path="Unity.Burst.Editor.csproj" />
@@ -44,7 +45,6 @@
   <Project Path="Unity.XR.CoreUtils.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Center.Common.csproj" />
   <Project Path="Unity.XR.Management.Editor.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Tools.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />
   <Project Path="Core.csproj" />
